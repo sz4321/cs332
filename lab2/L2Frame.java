@@ -2,11 +2,31 @@ import java.io.*;
 import java.net.*;
 import java.util.*;
 
+/**
+ * L2Frame stores values of L2Frame
+ * Nikita Sietsema and Sebrina Zeleke
+ * Septemeber 26 2019
+ */
 public class L2Frame {
     private int destAddress, srcAddress, type, vlanId, payloadLength;
     private int checksum; // Even parity bit
     private String payloadData;
     public static int BCAST_ADDR = 0b1111;
+
+    /**
+    * L2Frame constructor
+    * @param bitString - string containing 4 bit destAddr, 4 bit srcAddr, 2 bit type, 2 bit vlanId, and %8 bit payloadData
+    */
+    public L2Frame(String bitString) {
+        // if (
+        //     bitString.chartAt(0) != '0'
+        //     || (bitString.substring(1, -1).length() - 12) % 8 != 0
+        //     || computeErrorCheck(bitString) != bitString.chartAt(1)
+        //     ){
+
+        // }
+
+    }
 
    /**
     * L2Frame constructor
@@ -38,29 +58,31 @@ public class L2Frame {
 			// Get total payload
             String totalPayload = Integer.toString(destAddress, 2) + Integer.toString(srcAddress, 2) + Integer.toString(type, 2) + Integer.toString(vlanId, 2) + payloadData;
 
-            // Loop over payload to determine number of ones
-            int numOnes = 0;
-            for(int i = 0; i < totalPayload.length(); i++) {
-                if (totalPayload.charAt(i) == '1') {
-                    numOnes++;
-                }
-            }
+            computeErrorCheck(totalPayload);
+            // // Loop over payload to determine number of ones
+            // int numOnes = 0;
+            // for(int i = 0; i < totalPayload.length(); i++) {
+            //     if (totalPayload.charAt(i) == '1') {
+            //         numOnes++;
+            //     }
+            // }
 
-            // Save computed checksum value
-            if (numOnes % 2 == 0 ) {
-                this.checksum = 0;
-            } else {
-                this.checksum = 1;
-            }
+            // // Save computed checksum value
+            // if (numOnes % 2 == 0 ) {
+            //     this.checksum = 0;
+            // } else {
+            //     this.checksum = 1;
+            // }
         }
     }
     
     /**
-     * toString method converts L2Frame into string
+     * toString method converts L2Frame into string with prepended 0
      * @return string representation of L2Frame
      */
     public String toString() {
-        return padWithZeros(4, Integer.toString(destAddress, 2)) 
+        return "0" 
+               + padWithZeros(4, Integer.toString(destAddress, 2)) 
                + padWithZeros(4, Integer.toString(srcAddress, 2))
                + padWithZeros(2, Integer.toString(type, 2)) 
                + padWithZeros(2, Integer.toString(vlanId, 2))
@@ -138,7 +160,6 @@ public class L2Frame {
 
         return padWithZeros(length, binaryNum);
     }
-
 
     /**
      * padWithZeros() util function to pad a binary number with leading zeros up to specified length
