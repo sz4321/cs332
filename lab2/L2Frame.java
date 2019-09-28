@@ -2,11 +2,36 @@ import java.io.*;
 import java.net.*;
 import java.util.*;
 
+/**
+ * L2Frame stores values of L2Frame
+ * Nikita Sietsema and Sebrina Zeleke
+ * Septemeber 26 2019
+ */
 public class L2Frame {
     private int destAddress, srcAddress, type, vlanId, payloadLength;
     private int checksum; // Even parity bit
     private String payloadData;
     public static int BCAST_ADDR = 0b1111;
+
+    /**
+    * L2Frame constructor
+    * @param bitString - string containing 4 bit destAddr, 4 bit srcAddr, 2 bit type, 2 bit vlanId, and %8 bit payloadData
+    */
+    public L2Frame(String bitString) throws IllegalArgumentException {
+        if (
+            bitString.substring(0, 0) != "0"
+            || (bitString.substring(1, -1).length() - 12) % 8 != 0
+            || computeErrorCheck(bitString) != Integer.parseInt(bitString.substring(1, 1), 2)
+            ) {
+                throw new IllegalArgumentException();
+            }
+            this.payloadLength = bitString.substring(12, -1).length() / 8;
+            this.destAddress = Integer.parseInt(bitString.substring(0, 4), 2);
+            this.srcAddress = Integer.parseInt(bitString.substring(4, 8), 2);
+            this.type = Integer.parseInt(bitString.substring(8, 10), 2);
+            this.vlanId = Integer.parseInt(bitString.substring(10, 12), 2);
+            this.payloadData = bitString.substring(12, -1);
+    }
 
    /**
     * L2Frame constructor
@@ -16,7 +41,7 @@ public class L2Frame {
     * @param vlanId - Id for VLAN
     * @param payloadData - String of bits representing data
     */
-    public L2Frame(int destAddress, int srcAddress, int type, int vlanId, String payloadData) {
+    public L2Frame(int destAddress, int srcAddress, int type, int vlanId, String payloadData) throws IllegalArgumentException {
         
         if (
             Integer.toString(destAddress, 2).length() > 4 
@@ -25,7 +50,7 @@ public class L2Frame {
             || Integer.toString(vlanId, 2).length() > 2 
             || payloadData.length() % 8 != 0
             ) {
-            System.out.println("THROW ERROR HERE, INVALID LENGTH");
+                throw new IllegalArgumentException();
         } else {
             this.payloadLength = payloadData.length() / 8;
             this.destAddress = destAddress;
@@ -38,29 +63,18 @@ public class L2Frame {
 			// Get total payload
             String totalPayload = Integer.toString(destAddress, 2) + Integer.toString(srcAddress, 2) + Integer.toString(type, 2) + Integer.toString(vlanId, 2) + payloadData;
 
-            // Loop over payload to determine number of ones
-            int numOnes = 0;
-            for(int i = 0; i < totalPayload.length(); i++) {
-                if (totalPayload.charAt(i) == '1') {
-                    numOnes++;
-                }
-            }
-
-            // Save computed checksum value
-            if (numOnes % 2 == 0 ) {
-                this.checksum = 0;
-            } else {
-                this.checksum = 1;
-            }
+            this.checksum =  computeErrorCheck(totalPayload);
+    
         }
     }
     
     /**
-     * toString method converts L2Frame into string
+     * toString method converts L2Frame into string with prepended 0
      * @return string representation of L2Frame
      */
     public String toString() {
-        return padWithZeros(4, Integer.toString(destAddress, 2)) 
+        return "0" 
+               + padWithZeros(4, Integer.toString(destAddress, 2)) 
                + padWithZeros(4, Integer.toString(srcAddress, 2))
                + padWithZeros(2, Integer.toString(type, 2)) 
                + padWithZeros(2, Integer.toString(vlanId, 2))
@@ -123,7 +137,14 @@ public class L2Frame {
         return payloadData;
     }
 
-    public static String toBinary( int value, int length){
+    
+   /**
+     * Changes the value to binary and adds 0 infront when needed
+     * @return binaryNum
+     * @param value
+     * @param length
+     */
+     public static String toBinary( int value, int length){
         String reverseBinary = "";
         String binaryNum = "";
         while(value > 0){
@@ -139,7 +160,6 @@ public class L2Frame {
         return padWithZeros(length, binaryNum);
     }
 
-
     /**
      * padWithZeros() util function to pad a binary number with leading zeros up to specified length
      * @param length int of needed length for bistring
@@ -154,4 +174,31 @@ public class L2Frame {
         }
         return binaryNum;
     }
+    
+    /** 
+     * Computes the error checking value 
+     * @param totalPayload
+     * @return checksum
+     */
+     public static Integer computeErrorCheck(String totalPayload){
+       int myCheckSum;
+
+        // Loop over payload to determine number of ones
+        int numOnes = 0;
+        for(int i = 0; i < totalPayload.length(); i++) {
+            if (totalPayload.charAt(i) == '1') {
+                numOnes++;
+            }
+        }
+
+        // Save computed checksum value
+        if (numOnes % 2 == 0 ) {
+            myCheckSum = 0;
+        } else {
+            myCheckSum = 1;
+        }
+
+        return myCheckSum;
+    }
+
 }
