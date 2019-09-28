@@ -8,18 +8,19 @@ import java.util.*;
  * @author Nikita Sietsema and Sebrina Zeleke
  * Septemeber 26 2019
  */
-public class L2Handler implements BitListener {
+public class L2Handler {
     BitHandler handler;
     int macAddr;
-    // Layer2Listener layer2listener;
+    Layer2Listener layer2listener;
+
 
     /**
     * L2Handler default constructor with specified macAddr
     * @param macAddr - MAC address
     */
-    public L2Handler(int macAddr) {
+    public L2Handler(int macAddr) throws IllegalArgumentException {
         if (Integer.toString(macAddr, 2).length() > 8) {
-            System.out.println("THROW AN ERROR HERE, INVALID MAC");
+            throw new IllegalArgumentException();
         }
         this.handler = new BitHandler();
         handler.setListener(this);
@@ -38,6 +39,10 @@ public class L2Handler implements BitListener {
         this.macAddr = macAddr;
     }
 
+    // Set up listener
+    public void setListener(Layer2Listener l) {
+		layer2listener = l;
+	}
 
     /**
     * getter for macAddr
@@ -69,9 +74,9 @@ public class L2Handler implements BitListener {
         handler.broadcast(frameBitString);
     }
 
-    public void bitsReceived(BitHandler h, String bits) {
-		            // receiveField.setText(bits);
-    }
+    // public void bitsReceived(BitHandler h, String bits) {
+	// 	            // receiveField.setText(bits);
+    // }
 
     /**
      * padWithZeros() util function to pad a binary number with leading zeros up to specified length

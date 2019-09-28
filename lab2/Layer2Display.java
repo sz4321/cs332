@@ -7,12 +7,13 @@ import javax.swing.*;
  * Edited by: Nikita Sietsema and Sebrina Zeleke
  * Septemeber 26 2019
  */
-public class Layer2Display implements ActionListener
+public class Layer2Display implements ActionListener, Layer2Listener
 {
 	private L2Handler handler;
 	private JTextField vlanIdField;
 	private JTextField displayField;
-	private JTextField addressField;
+	private JTextField srcAddrField;
+	private JTextField destAddrField;
 	private JTextField payloadField;
 
 	public Layer2Display(L2Handler handler)
@@ -28,11 +29,17 @@ public class Layer2Display implements ActionListener
 		displayField.setEditable(false);
 		frame.getContentPane().add(displayField);
 
-		frame.getContentPane().add(new JLabel("Address:"));
+		frame.getContentPane().add(new JLabel("Destination Address:"));
 
-		addressField = new JTextField(20);
-		addressField.addActionListener(this);
-		frame.getContentPane().add(addressField);
+		destAddrField = new JTextField(20);
+		destAddrField.addActionListener(this);
+		frame.getContentPane().add(destAddrField);
+
+		frame.getContentPane().add(new JLabel("Src Address:"));
+
+		srcAddrField = new JTextField(20);
+		srcAddrField.addActionListener(this);
+		frame.getContentPane().add(srcAddrField);
 
 		frame.getContentPane().add(new JLabel("vlanId:"));
 
@@ -51,6 +58,9 @@ public class Layer2Display implements ActionListener
 	}
 
 
+	public void frameRecieved(L2Handler handler, L2Frame frame) {
+
+	}
 	
     public void actionPerformed(ActionEvent e) 
     {
@@ -59,15 +69,15 @@ public class Layer2Display implements ActionListener
 			new Thread()
 			{
 				public void run() {
-					int destAddr = Integer.parseInt(displayField.getText(), 2);
-					int srcAddr = Integer.parseInt(addressField.getText(), 2);
+					int destAddr = Integer.parseInt(destAddrField.getText(), 2);
+					int srcAddr = Integer.parseInt(srcAddrField.getText(), 2);
 					int vlanId = Integer.parseInt(vlanIdField.getText(), 2);
 					String payload = payloadField.getText();
 					handler.send(new L2Frame(destAddr, srcAddr, 0b00, vlanId, payload));
 				}
 			}.start();
 		} catch (CollisionException exception) {
-			System.out.println("THROW EXCEPTION HERE LATER");
+			throw new CollisionException();
 		}
 		
     }
