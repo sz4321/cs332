@@ -35,13 +35,13 @@ public class Layer2Display implements ActionListener, Layer2Listener
 		destAddrField.addActionListener(this);
 		frame.getContentPane().add(destAddrField);
 
-		frame.getContentPane().add(new JLabel("Src Address:"));
+		frame.getContentPane().add(new JLabel("Source Address:"));
 
 		srcAddrField = new JTextField(20);
 		srcAddrField.addActionListener(this);
 		frame.getContentPane().add(srcAddrField);
 
-		frame.getContentPane().add(new JLabel("vlanId:"));
+		frame.getContentPane().add(new JLabel("VLAN Id:"));
 
 		vlanIdField = new JTextField(20);
 		vlanIdField.addActionListener(this);
@@ -57,29 +57,28 @@ public class Layer2Display implements ActionListener, Layer2Listener
 		frame.setVisible(true);
 	}
 
-
+	/**
+	 * frameRecieved() takes a layer two frame and displays it in the text field
+	 * @param handler a L2Handler to handle bits recieved
+	 * @param frame the frame used to set the text on
+	 */
 	public void frameRecieved(L2Handler handler, L2Frame frame) {
-
+		displayField.setText(frame.getPayloadData());
 	}
 	
     public void actionPerformed(ActionEvent e) 
     {
-		try {
-			displayField.setText("Sending...");
-			new Thread()
-			{
-				public void run() {
-					int destAddr = Integer.parseInt(destAddrField.getText(), 2);
-					int srcAddr = Integer.parseInt(srcAddrField.getText(), 2);
-					int vlanId = Integer.parseInt(vlanIdField.getText(), 2);
-					String payload = payloadField.getText();
-					handler.send(new L2Frame(destAddr, srcAddr, 0b00, vlanId, payload));
-				}
-			}.start();
-		} catch (CollisionException exception) {
-			throw new CollisionException();
-		}
-		
+		displayField.setText("Sending...");
+		new Thread()
+		{
+			public void run() {
+				int destAddr = Integer.parseInt(destAddrField.getText(), 2);
+				int srcAddr = Integer.parseInt(srcAddrField.getText(), 2);
+				int vlanId = Integer.parseInt(vlanIdField.getText(), 2);
+				String payload = payloadField.getText();
+				handler.send(new L2Frame(destAddr, srcAddr, 0b00, vlanId, payload));
+			}
+		}.start();
     }
 
 }
