@@ -35,6 +35,10 @@ public class Test {
 			assert dllHandler2.getMacAddr() == 0b01101101 : "getMacAddr 2 failed!";
 			System.out.println("macAddr: " + dllHandler2.toString());
 
+			assert dllFrame.computeErrorCheck("101") == 0 : "computeErrorCheck failed!";
+			assert dllFrame.computeErrorCheck("111") == 1 : "computeErrorCheck failed!";
+			assert dllFrame.computeErrorCheck("011") == 0 : "computeErrorCheck failed!";
+
 			Layer2Display layer2Dispaly = new Layer2Display(dllHandler2);
 
 			System.out.println("All Tests passed!");

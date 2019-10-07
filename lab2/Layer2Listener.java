@@ -1,3 +1,3 @@
 public interface Layer2Listener {
-    void frameReceived(L2Handler h, L2Frame f);
+    public void frameRecieved(L2Handler h, L2Frame f);
 }

@@ -8,7 +8,7 @@ import java.util.*;
  * @author Nikita Sietsema and Sebrina Zeleke
  * Septemeber 26 2019
  */
-public class L2Handler {
+public class L2Handler implements BitListener {
     BitHandler handler;
     int macAddr;
     Layer2Listener layer2listener;
@@ -41,8 +41,8 @@ public class L2Handler {
 
     // Set up listener
     public void setListener(Layer2Listener l) {
-		layer2listener = l;
-	}
+        layer2listener = l;
+    }
 
     /**
     * getter for macAddr
@@ -64,19 +64,23 @@ public class L2Handler {
     * Take L2Frame and covert it to string representation
     * @return 
     */
-    public void send(L2Frame frame) throws CollisionException {
-        String frameBitString = frame.toString();
-        while (true) {
-            if (handler.isSilent()) {
-                break;
+    public void send(L2Frame frame) {
+        try {
+            String frameBitString = frame.toString();
+            while (true) {
+                if (handler.isSilent()) {
+                    break;
+                }
             }
+            handler.broadcast(frameBitString);
+        } catch(CollisionException e) {
+            System.out.println("Collision!");
         }
-        handler.broadcast(frameBitString);
     }
 
-    // public void bitsReceived(BitHandler h, String bits) {
-	// 	            // receiveField.setText(bits);
-    // }
+    public void bitsReceived(BitHandler h, String bits) {
+		            // receiveField.setText(bits);
+    }
 
     /**
      * padWithZeros() util function to pad a binary number with leading zeros up to specified length

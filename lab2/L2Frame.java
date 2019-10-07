@@ -17,20 +17,24 @@ public class L2Frame {
     * L2Frame constructor
     * @param bitString - string containing 4 bit destAddr, 4 bit srcAddr, 2 bit type, 2 bit vlanId, and %8 bit payloadData
     */
-    public L2Frame(String bitString) throws IllegalArgumentException {
-        if (
-            bitString.substring(0, 0) != "0"
-            || (bitString.substring(1, -1).length() - 12) % 8 != 0
-            || computeErrorCheck(bitString) != Integer.parseInt(bitString.substring(1, 1), 2)
-            ) {
-                throw new IllegalArgumentException();
-            }
-            this.payloadLength = bitString.substring(12, -1).length() / 8;
-            this.destAddress = Integer.parseInt(bitString.substring(0, 4), 2);
-            this.srcAddress = Integer.parseInt(bitString.substring(4, 8), 2);
-            this.type = Integer.parseInt(bitString.substring(8, 10), 2);
-            this.vlanId = Integer.parseInt(bitString.substring(10, 12), 2);
-            this.payloadData = bitString.substring(12, -1);
+    public L2Frame(String bitString) {
+        try {
+            if (
+                bitString.substring(0, 0) != "0"
+                || (bitString.substring(1, -1).length() - 12) % 8 != 0
+                || computeErrorCheck(bitString) != Integer.parseInt(bitString.substring(1, 1), 2)
+                ) {
+                    throw new IllegalArgumentException();
+                }
+                this.payloadLength = bitString.substring(12, -1).length() / 8;
+                this.destAddress = Integer.parseInt(bitString.substring(0, 4), 2);
+                this.srcAddress = Integer.parseInt(bitString.substring(4, 8), 2);
+                this.type = Integer.parseInt(bitString.substring(8, 10), 2);
+                this.vlanId = Integer.parseInt(bitString.substring(10, 12), 2);
+                this.payloadData = bitString.substring(12, -1);
+        } catch (IllegalArgumentException e) {
+            System.out.println("Come on man, follow protocol");
+        }
     }
 
    /**
@@ -41,30 +45,33 @@ public class L2Frame {
     * @param vlanId - Id for VLAN
     * @param payloadData - String of bits representing data
     */
-    public L2Frame(int destAddress, int srcAddress, int type, int vlanId, String payloadData) throws IllegalArgumentException {
-        
-        if (
-            Integer.toString(destAddress, 2).length() > 4 
-            || Integer.toString(srcAddress, 2).length() > 4 
-            || Integer.toString(type, 2).length() > 2 
-            || Integer.toString(vlanId, 2).length() > 2 
-            || payloadData.length() % 8 != 0
-            ) {
-                throw new IllegalArgumentException();
-        } else {
-            this.payloadLength = payloadData.length() / 8;
-            this.destAddress = destAddress;
-            this.srcAddress = srcAddress;
-            this.type = type;
-            this.vlanId = vlanId;
-            this.payloadData = payloadData;
-            
-            //---determine checksum---//
-			// Get total payload
-            String totalPayload = Integer.toString(destAddress, 2) + Integer.toString(srcAddress, 2) + Integer.toString(type, 2) + Integer.toString(vlanId, 2) + payloadData;
-
-            this.checksum =  computeErrorCheck(totalPayload);
+    public L2Frame(int destAddress, int srcAddress, int type, int vlanId, String payloadData) {
+        try {
+            if (
+                Integer.toString(destAddress, 2).length() > 4 
+                || Integer.toString(srcAddress, 2).length() > 4 
+                || Integer.toString(type, 2).length() > 2 
+                || Integer.toString(vlanId, 2).length() > 2 
+                || payloadData.length() % 8 != 0
+                ) {
+                    throw new IllegalArgumentException();
+            } else {
+                this.payloadLength = payloadData.length() / 8;
+                this.destAddress = destAddress;
+                this.srcAddress = srcAddress;
+                this.type = type;
+                this.vlanId = vlanId;
+                this.payloadData = payloadData;
+                
+                //---determine checksum---//
+                // Get total payload
+                String totalPayload = Integer.toString(destAddress, 2) + Integer.toString(srcAddress, 2) + Integer.toString(type, 2) + Integer.toString(vlanId, 2) + payloadData;
     
+                this.checksum =  computeErrorCheck(totalPayload);
+        
+            }
+        } catch (IllegalArgumentException e) {
+            System.out.println("Come on man, follow protocol");
         }
     }
     
@@ -74,6 +81,7 @@ public class L2Frame {
      */
     public String toString() {
         return "0" 
+               + this.checksum
                + padWithZeros(4, Integer.toString(destAddress, 2)) 
                + padWithZeros(4, Integer.toString(srcAddress, 2))
                + padWithZeros(2, Integer.toString(type, 2)) 
@@ -145,18 +153,7 @@ public class L2Frame {
      * @param length
      */
      public static String toBinary( int value, int length){
-        String reverseBinary = "";
-        String binaryNum = "";
-        while(value > 0){
-            reverseBinary = reverseBinary + String.valueOf(value % 2);
-            value = value /2;
-        }
-        
-        //reverse what we got 
-        for (int i = reverseBinary.length() -1; i >= 0; i--){
-            binaryNum = binaryNum + String.valueOf(reverseBinary.charAt(i));
-        }
-
+        String binaryNum = Integer.toBinaryString(value);
         return padWithZeros(length, binaryNum);
     }
 
@@ -166,9 +163,9 @@ public class L2Frame {
      * @param binaryNum string representation of binary number to be padded with zeros
      */
     private static String padWithZeros(int length, String binaryNum) {
-        int zero_num = length - binaryNum.length();
-        if(zero_num > 0){
-            for(int i = 0; i < zero_num; i++){
+        int num_zeros = length - binaryNum.length();
+        if(num_zeros > 0){
+            for(int i = 0; i < num_zeros; i++){
                 binaryNum = "0" + binaryNum;
             }
         }
@@ -176,7 +173,7 @@ public class L2Frame {
     }
     
     /** 
-     * Computes the error checking value 
+     * Computes the error checking value using even parity
      * @param totalPayload
      * @return checksum
      */
