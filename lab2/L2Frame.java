@@ -4,7 +4,7 @@ import java.util.*;
 
 /**
  * L2Frame stores values of L2Frame
- * Nikita Sietsema and Sebrina Zeleke
+ * @author Nikita Sietsema and Sebrina Zeleke
  * Septemeber 26 2019
  */
 public class L2Frame {
