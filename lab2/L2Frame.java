@@ -15,25 +15,27 @@ public class L2Frame {
 
     /**
     * L2Frame constructor
-    * @param bitString - string containing 4 bit destAddr, 4 bit srcAddr, 2 bit type, 2 bit vlanId, and %8 bit payloadData
+    * @param bitString - string containing leading 0, checksum, 4 bit destAddr, 4 bit srcAddr, 2 bit type, 2 bit vlanId, and %8 bit payloadData
     */
     public L2Frame(String bitString) {
         try {
-            if (
-                bitString.substring(0, 0) != "0"
-                || (bitString.substring(1, -1).length() - 12) % 8 != 0
-                || computeErrorCheck(bitString) != Integer.parseInt(bitString.substring(1, 1), 2)
+            System.out.println("bitString passed to L2Frame: " + bitString);
+
+            if (bitString.charAt(0) != '0'
+                || (bitString.length() - 14) % 8 != 0 
+                || computeErrorCheck(bitString.substring(2)) != Integer.parseInt(bitString.substring(1, 2), 2)
                 ) {
                     throw new IllegalArgumentException();
                 }
-                this.payloadLength = bitString.substring(12, -1).length() / 8;
-                this.destAddress = Integer.parseInt(bitString.substring(0, 4), 2);
-                this.srcAddress = Integer.parseInt(bitString.substring(4, 8), 2);
-                this.type = Integer.parseInt(bitString.substring(8, 10), 2);
-                this.vlanId = Integer.parseInt(bitString.substring(10, 12), 2);
-                this.payloadData = bitString.substring(12, -1);
+                this.destAddress = Integer.parseInt(bitString.substring(2, 6), 2);
+                this.srcAddress = Integer.parseInt(bitString.substring(6, 10), 2);
+                this.type = Integer.parseInt(bitString.substring(10, 12), 2);
+                this.vlanId = Integer.parseInt(bitString.substring(12, 14), 2);
+                this.payloadData = bitString.substring(14);
+                this.payloadLength = payloadData.length() / 8;
+                
         } catch (IllegalArgumentException e) {
-            System.out.println("Come on man, follow protocol");
+            System.out.println("Come on man, follow protocol (L2Frame bitstring constructor)");
         }
     }
 
@@ -71,7 +73,7 @@ public class L2Frame {
         
             }
         } catch (IllegalArgumentException e) {
-            System.out.println("Come on man, follow protocol");
+            System.out.println("Come on man, follow protocol (L2Frame explicit constructor)");
         }
     }
     

@@ -19,7 +19,7 @@ public class L2Handler implements BitListener {
     * @param macAddr - MAC address
     */
     public L2Handler(int macAddr) throws IllegalArgumentException {
-        if (Integer.toString(macAddr, 2).length() > 8) {
+        if (Integer.toString(macAddr, 2).length() > 4) {
             throw new IllegalArgumentException();
         }
         this.handler = new BitHandler();
@@ -57,7 +57,7 @@ public class L2Handler implements BitListener {
     * @return macAddr string
     */
     public String toString() {
-        return padWithZeros(8, Integer.toString(macAddr, 2));
+        return padWithZeros(4, Integer.toString(macAddr, 2));
     }
 
     /**
@@ -78,8 +78,22 @@ public class L2Handler implements BitListener {
         }
     }
 
+    /** 
+    * bitsReceived() util function to pad a binary number with leading zeros up to specified length
+    * @param h Currently unused BitHandler kept for implimentation BitListener
+    * @param bits string representation of received frame
+    */
     public void bitsReceived(BitHandler h, String bits) {
-		            // receiveField.setText(bits);
+        try{
+            L2Frame frame = new L2Frame(bits);
+
+            // If dest address is mine or broadcast (and I didn't send it)
+            if (frame.getDestAddress() == macAddr || (frame.getDestAddress() == 15 && frame.getSrcAddress() != macAddr)){
+                layer2listener.frameRecieved(this, frame);
+            } 
+        } catch(Exception e) {
+            System.out.print("Error receiving bits: " + e);
+        }
     }
 
     /**

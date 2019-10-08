@@ -77,6 +77,7 @@ public class Layer2Display implements ActionListener, Layer2Listener
 				int vlanId = Integer.parseInt(vlanIdField.getText(), 2);
 				String payload = payloadField.getText();
 				handler.send(new L2Frame(destAddr, srcAddr, 0b00, vlanId, payload));
+				displayField.setText("Sent.");
 			}
 		}.start();
     }
