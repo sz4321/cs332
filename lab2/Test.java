@@ -27,21 +27,26 @@ public class Test {
 			System.out.println("frame: " + dllFrame.toString());
 
 			// Test L2Handler
-			L2Handler dllHandler = new L2Handler("localhost", LightSystem.DEFAULT_PORT, 0b11101101);
-			assert dllHandler.getMacAddr() == 0b11101101 : "getMacAddr 1 failed!";
+			L2Handler dllHandler = new L2Handler("localhost", LightSystem.DEFAULT_PORT, 0b1101);
+			assert dllHandler.getMacAddr() == 0b1101 : "getMacAddr 1 failed!";
 			System.out.println("macAddr: " + dllHandler.toString());
 
-			L2Handler dllHandler2 = new L2Handler("localhost", LightSystem.DEFAULT_PORT, 0b01101101);
-			assert dllHandler2.getMacAddr() == 0b01101101 : "getMacAddr 2 failed!";
+			L2Handler dllHandler2 = new L2Handler("localhost", LightSystem.DEFAULT_PORT, 0b01001);
+			assert dllHandler2.getMacAddr() == 0b1001 : "getMacAddr 2 failed!";
 			System.out.println("macAddr: " + dllHandler2.toString());
 
+			// Test error check computes correctly
 			assert dllFrame.computeErrorCheck("101") == 0 : "computeErrorCheck failed!";
 			assert dllFrame.computeErrorCheck("111") == 1 : "computeErrorCheck failed!";
 			assert dllFrame.computeErrorCheck("011") == 0 : "computeErrorCheck failed!";
 
-			Layer2Display layer2Dispaly = new Layer2Display(dllHandler2);
-
 			System.out.println("All Tests passed!");
+
+			Layer2Display layer2Dispaly = new Layer2Display(dllHandler);
+			Layer2Display secondLayer2Display = new Layer2Display(dllHandler2);
+			L2Handler dllHandler3 = new L2Handler("localhost", LightSystem.DEFAULT_PORT, 0b01011);
+			Layer2Display thirdLayer2Display = new Layer2Display(dllHandler3);
+
 		} catch (Exception e) {
 			System.out.println("We got an exception");
 		}
