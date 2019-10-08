@@ -1,3 +1,8 @@
+/**
+ * Test for layer 2.
+ * @author Sebrina Zeleke and Nikita Sietsema
+ * Septemeber 26 2019
+ */
 public class Test {
 	public static void main(String[] args) {
 		try {
@@ -19,10 +24,10 @@ public class Test {
 			assert dllFrame.getVlanId() ==  3 : "vlanId failed!";
 		
 			//test toBinary()
-			// assert dllFrame.toBinary(8,8) ==  "00001000" : "toBinary failed 1";
-			// assert dllFrame.toBinary(5,5) ==  "00101" : "toBinary failed 2";
-			// assert dllFrame.toBinary(17,5) ==  "10001" : "toBinary failed 3";
-			// assert dllFrame.toBinary(8,8) ==  "00001000" : "toBinary failed 4";
+			System.out.println(dllFrame.toBinary(8,8) + " == " +  "00001000");
+			System.out.println(dllFrame.toBinary(5, 5) + " == " +  "00101");
+			System.out.println(dllFrame.toBinary(17, 5) + " == " +  "10001");
+			System.out.println(dllFrame.toBinary(8,8) + " == " +  "00001000");
 
 			System.out.println("frame: " + dllFrame.toString());
 
