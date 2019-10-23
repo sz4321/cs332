@@ -7,7 +7,6 @@ import socket
 import sys
 import argparse
 import os, errno
-import curses
 
 # set up commands for user
 parser = argparse.ArgumentParser(description="A prattle client")
