@@ -19,7 +19,9 @@ public class L2Frame {
     */
     public L2Frame(String bitString) {
         try {
-            System.out.println("bitString passed to L2Frame: " + bitString);
+            // System.out.println("bitString passed to L2Frame: " + bitString);
+            // System.out.println("bitString length: " + bitString.length());
+            // System.out.println("bitString error check: " + computeErrorCheck(bitString.substring(2)) + "==" + Integer.parseInt(bitString.substring(1, 2), 2));
 
             if (bitString.charAt(0) != '0'
                 || (bitString.length() - 14) % 8 != 0 
@@ -49,11 +51,16 @@ public class L2Frame {
     */
     public L2Frame(int destAddress, int srcAddress, int type, int vlanId, String payloadData) {
         try {
+            String myDestAddress = Integer.toBinaryString(destAddress);
+            String mySrcAddress = Integer.toBinaryString(srcAddress);
+            String myType = Integer.toBinaryString(type);
+            String myVlandId = Integer.toBinaryString(vlanId);
+
             if (
-                Integer.toString(destAddress, 2).length() > 4 
-                || Integer.toString(srcAddress, 2).length() > 4 
-                || Integer.toString(type, 2).length() > 2 
-                || Integer.toString(vlanId, 2).length() > 2 
+                myDestAddress.length() > 4 
+                || mySrcAddress.length() > 4 
+                || myType.length() > 2 
+                || myVlandId.length() > 2 
                 || payloadData.length() % 8 != 0
                 ) {
                     throw new IllegalArgumentException();
@@ -65,10 +72,10 @@ public class L2Frame {
                 this.vlanId = vlanId;
                 this.payloadData = payloadData;
                 
-                //---determine checksum---//
                 // Get total payload
-                String totalPayload = Integer.toString(destAddress, 2) + Integer.toString(srcAddress, 2) + Integer.toString(type, 2) + Integer.toString(vlanId, 2) + payloadData;
-    
+                String totalPayload = padWithZeros(4, myDestAddress) + padWithZeros(4, mySrcAddress) + padWithZeros(4, myType) + padWithZeros(4, myVlandId) + this.payloadData;
+
+                // Calculate error check on totalPayload
                 this.checksum =  computeErrorCheck(totalPayload);
         
             }
@@ -79,28 +86,28 @@ public class L2Frame {
     
     /**
      * toString method converts L2Frame into string with prepended 0
-     * @return string representation of L2Frame
+     * @return string representation of L2Frame in binary
      */
     public String toString() {
         return "0" 
-               + this.checksum
-               + padWithZeros(4, Integer.toString(destAddress, 2)) 
-               + padWithZeros(4, Integer.toString(srcAddress, 2))
-               + padWithZeros(2, Integer.toString(type, 2)) 
-               + padWithZeros(2, Integer.toString(vlanId, 2))
+               + checksum
+               + toBinary(destAddress, 4)
+               + toBinary(srcAddress, 4)
+               + toBinary(type, 2)
+               + toBinary(vlanId, 2)
                + payloadData;
     }
 
     /**
      * getter for payloadLength
-     * @return payloadLength
+     * @return payloadLength in bytes
      */
     public int getPayloadLength() {
         return payloadLength;
     }
 
     /**
-     * getter for destAddress
+     * getter for destAddress, returns in decimal
      * @return destAddress
      */
     public int getDestAddress() {
@@ -108,7 +115,7 @@ public class L2Frame {
     }
 
     /**
-     * getter for srcAddress
+     * getter for srcAddress, returns in decimal
      * @return srcAddress
      */
     public int getSrcAddress() {
@@ -116,7 +123,7 @@ public class L2Frame {
     }
 
     /**
-     * getter for type
+     * getter for type, returns in decimal
      * @return type
      */
     public int getType() {
@@ -124,7 +131,7 @@ public class L2Frame {
     }
 
     /** 
-     * getter for vlanID
+     * getter for vlanID, returns in decimal
      * @return vlanID
      */
     public int getVlanId() {
@@ -163,6 +170,7 @@ public class L2Frame {
      * padWithZeros() util function to pad a binary number with leading zeros up to specified length
      * @param length int of needed length for bistring
      * @param binaryNum string representation of binary number to be padded with zeros
+     * @return binaryNum string
      */
     private static String padWithZeros(int length, String binaryNum) {
         int num_zeros = length - binaryNum.length();

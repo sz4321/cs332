@@ -72,11 +72,11 @@ public class Layer2Display implements ActionListener, Layer2Listener
 		new Thread()
 		{
 			public void run() {
-				int destAddr = Integer.parseInt(destAddrField.getText(), 2);
-				int srcAddr = Integer.parseInt(srcAddrField.getText(), 2);
-				int vlanId = Integer.parseInt(vlanIdField.getText(), 2);
+				int destAddr = Integer.parseInt(destAddrField.getText());
+				int srcAddr = Integer.parseInt(srcAddrField.getText());
+				int vlanId = Integer.parseInt(vlanIdField.getText());
 				String payload = payloadField.getText();
-				handler.send(new L2Frame(destAddr, srcAddr, 0b00, vlanId, payload));
+				handler.send(new L2Frame(destAddr, srcAddr, 0, vlanId, payload));
 				displayField.setText("Sent.");
 			}
 		}.start();
