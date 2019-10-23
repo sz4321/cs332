@@ -1,3 +1,6 @@
+# Server skeleton to handle I/O messages on server end
+# Author: Prof Norman
+
 import socket
 import select
 import argparse
@@ -9,4 +12,3 @@ parser.add_argument("-p", "--port", dest="port", type=int, default=12345,
 parser.add_argument("-v", "--verbose", action="store_true", dest="verbose",
                     help="turn verbose output on")
 args = parser.parse_args()
-
