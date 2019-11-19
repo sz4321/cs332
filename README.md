@@ -1,4 +1,4 @@
-# RCMP - Rliable Calvin Message Protocol over UDP
+# RCMP - Reliable Calvin Message Protocol over UDP
 
 ## Running client and server:
 (1) Open terminal and write `./talk_server -v`
