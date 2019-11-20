@@ -27,33 +27,29 @@ args = parser.parse_args()
 # Store variables
 PACKET_SIZE = 10
 port = args.port
-serverSocket = socket.socket()
+serverSocket = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
 host = args.hostname
 
 # Start server listening
 serverSocket.bind((host, port))
-serverSocket.listen(5)
 print('Server listening....')
+
 if not args.verbose:
     print('Use -v to turn on verbose')
 
-# Accept a client connection
-conn, addr = serverSocket.accept()
-if args.verbose:
-    print('Got connection from', addr)
 
 # Open file to write to
 with open(args.fileDest, 'wb') as f:
     while True:
         # Recieve data
-        if args.verbose: 
-            print('receiving data...')
-        data = conn.recv(PACKET_SIZE)
+        data, addr = serverSocket.recvfrom(PACKET_SIZE)
+        if args.verbose:
+            print('Recieving data from', addr)
         dataSize = len(data)
 
         # Print info if verbose is true
         if args.verbose:
-            print('Data: ', (data), "\nSize: ", dataSize)
+            print('Data: ', (data), "Size: ", dataSize)
 
         # write data to a file
         f.write(data)
@@ -61,8 +57,9 @@ with open(args.fileDest, 'wb') as f:
         # End connection when packet is smaller 
         # than packet size
         if dataSize < PACKET_SIZE:
+            print('what is happening')
             break
 
 f.close()
-conn.close()
+serverSocket.close()
 print('Connection closed, wrote file')

@@ -32,7 +32,7 @@ if not args.verbose:
 
 try:
     # Create socket
-    clientSocket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+    clientSocket = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
     if args.verbose:
         print('Created clientSocket')
 
@@ -53,7 +53,7 @@ try:
         dataSize = len(data)
 
         if args.verbose:
-            print('Data: ', repr(data), "\nSize: ", dataSize)
+            print('Data: ', repr(data), "Size: ", dataSize)
         
         # If packet is less than PACKET_SIZE then 
         # close file and break sending loop
