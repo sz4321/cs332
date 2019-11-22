@@ -25,7 +25,9 @@ args = parser.parse_args()
 
 
 ####################################  Main Logic ####################################
-PACKET_SIZE = 10
+PAYLOAD_SIZE = 10
+ACK_SIZE = 5
+ACK_MESSAGE = "_ACK_"
 
 if not args.verbose:
     print('Use -v to turn on verbose')
@@ -46,7 +48,7 @@ try:
     fileSrc = open(filename,'rb')
 
     # Read data into packets
-    data = fileSrc.read(PACKET_SIZE)
+    data = fileSrc.read(PAYLOAD_SIZE)
     while (data):
         # Send packet to server
         clientSocket.send(data)
@@ -55,14 +57,28 @@ try:
         if args.verbose:
             print('Data: ', repr(data), "Size: ", dataSize)
         
+        ## Wait for ACK
+        while True:
+            data, addr = clientSocket.recvfrom(ACK_SIZE)
+            if (addr[0] == args.server and data == ACK_MESSAGE):
+                if args.verbose:
+                    print(ACK_MESSAGE)
+                break
+            # else:
+                # add to timeout time
+                # if timeout time is  > MAX_TIMEOUT
+                # resend packet
+                
+
+
         # If packet is less than PACKET_SIZE then 
         # close file and break sending loop
-        if dataSize < PACKET_SIZE:
+        if dataSize < PAYLOAD_SIZE:
             fileSrc.close()
             break
 
         # Get next packet
-        data = fileSrc.read(PACKET_SIZE)
+        data = fileSrc.read(PAYLOAD_SIZE)
 
     print('Done sending')
     clientSocket.close()

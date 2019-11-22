@@ -25,7 +25,11 @@ args = parser.parse_args()
 
 ####################################  Main Logic ####################################
 # Store variables
-PACKET_SIZE = 10
+PAYLOAD_SIZE = 10
+HEADER_SIZE = 0
+ACK_MESSAGE = "_ACK_"
+PACKET_SIZE = PAYLOAD_SIZE + HEADER_SIZE
+
 port = args.port
 serverSocket = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
 host = args.hostname
@@ -43,6 +47,10 @@ with open(args.fileDest, 'wb') as f:
     while True:
         # Recieve data
         data, addr = serverSocket.recvfrom(PACKET_SIZE)
+
+        # Send ACK
+        serverSocket.sendto(ACK_MESSAGE, addr)
+
         if args.verbose:
             print('Recieving data from', addr)
         dataSize = len(data)
@@ -56,7 +64,7 @@ with open(args.fileDest, 'wb') as f:
 
         # End connection when packet is smaller 
         # than packet size
-        if dataSize < PACKET_SIZE:
+        if dataSize < (PACKET_SIZE):
             print('what is happening')
             break
 
