@@ -7,6 +7,8 @@ import socket
 import sys
 import argparse
 import os, errno
+import random
+import json # Used to send array as message
 
 # set up commands for user
 parser = argparse.ArgumentParser(description="A prattle client")
@@ -25,7 +27,7 @@ args = parser.parse_args()
 
 
 ####################################  Main Logic ####################################
-PAYLOAD_SIZE = 10
+PAYLOAD_SIZE = 1450
 ACK_SIZE = 5
 ACK_MESSAGE = "_ACK_"
 
@@ -44,18 +46,34 @@ try:
         print('Connected to server on port', args.port)
 
     # Open file to be sent
-    filename=args.filename
+    filename = args.filename
     fileSrc = open(filename,'rb')
 
     # Read data into packets
     data = fileSrc.read(PAYLOAD_SIZE)
+
+    # get total size of file to send
+    fileSize = os.path.getsize(filename)
+
+    # create connection ID
+    connectionId = random.randint(0, 2147483646)
+
+    currentPacketID = 0
     while (data):
+        # Create header, add to packet
+        packet = [connectionId, fileSize, currentPacketID]
+
+        # Increment currentPacketID
+        currentPacketID += 1
+
         # Send packet to server
-        clientSocket.send(data)
+        packet.append(data)
+        clientSocket.send(json.dumps(packet))
         dataSize = len(data)
 
         if args.verbose:
-            print('Data: ', repr(data), "Size: ", dataSize)
+            # TODO: delete this print stmt
+            print("connectionId: ", connectionId, "fileSize: ", fileSize, "currentPacketID: ", currentPacketID, 'Data: ', repr(data), "Size: ", dataSize)
         
         ## Wait for ACK
         while True:

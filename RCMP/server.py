@@ -5,6 +5,7 @@ import socket
 import select
 import argparse
 import sys
+import json
 
 parser = argparse.ArgumentParser(description="A prattle server")
 
@@ -25,10 +26,11 @@ args = parser.parse_args()
 
 ####################################  Main Logic ####################################
 # Store variables
-PAYLOAD_SIZE = 10
-HEADER_SIZE = 0
+PAYLOAD_SIZE = 1450
+HEADER_SIZE = 12
+TEMP_CONST = 81
 ACK_MESSAGE = "_ACK_"
-PACKET_SIZE = PAYLOAD_SIZE + HEADER_SIZE
+PACKET_SIZE = PAYLOAD_SIZE + HEADER_SIZE + TEMP_CONST
 
 port = args.port
 serverSocket = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
@@ -43,6 +45,8 @@ if not args.verbose:
 
 
 # Open file to write to
+totalRecievedBytes = 0
+currentConnectionId = None
 with open(args.fileDest, 'wb') as f:
     while True:
         # Recieve data
@@ -53,20 +57,35 @@ with open(args.fileDest, 'wb') as f:
 
         if args.verbose:
             print('Recieving data from', addr)
-        dataSize = len(data)
 
-        # Print info if verbose is true
-        if args.verbose:
-            print('Data: ', (data), "Size: ", dataSize)
+        # Extract packet payload
+        packet = json.loads(data)
+        payload = packet[3]
+        payloadSize = len(payload)
+        
+        # Extract header fields
+        connectionID = packet[0]
+        fileSize = packet[1]
+        currentPacketId = packet[2]
+        
+        # Set currentPacketId if this is the first packet and we do not have current connection
+        if (currentPacketId == 0 and currentConnectionId == None):
+            currentConnectionId = connectionID
+        
+        # if packet belongs to current connection
+        if (currentConnectionId == connectionID):
+            if args.verbose:
+                # TODO: delete this print stmt
+                print("connectionId: ", packet[0], "fileSize: ", fileSize, "currentPacketID: ", packet[2], 'Data: ', packet[3], "Size: ", payloadSize)
 
-        # write data to a file
-        f.write(data)
+            # write data to a file
+            f.write(payload)
 
-        # End connection when packet is smaller 
-        # than packet size
-        if dataSize < (PACKET_SIZE):
-            print('what is happening')
-            break
+            # End connection when packet is smaller 
+            # than total file size
+            totalRecievedBytes += payloadSize
+            if totalRecievedBytes == fileSize:
+                break
 
 f.close()
 serverSocket.close()
