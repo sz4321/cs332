@@ -28,8 +28,10 @@ args = parser.parse_args()
 
 ####################################  Main Logic ####################################
 PAYLOAD_SIZE = 1450
-ACK_SIZE = 5
+ACK_JSON_CONST = 19
 ACK_MESSAGE = "_ACK_"
+ACK_MESSAGE_SIZE = 5
+ACK_SIZE = ACK_MESSAGE_SIZE + ACK_JSON_CONST
 
 if not args.verbose:
     print('Use -v to turn on verbose')
@@ -75,19 +77,24 @@ try:
             # TODO: delete this print stmt
             print("connectionId: ", connectionId, "fileSize: ", fileSize, "currentPacketID: ", currentPacketID, 'Data: ', repr(data), "Size: ", dataSize)
         
-        ## Wait for ACK
+        # Wait for ACK
         while True:
+            # Extract ACK fields
             data, addr = clientSocket.recvfrom(ACK_SIZE)
-            if (addr[0] == args.server and data == ACK_MESSAGE):
+            ackPacket = json.loads(data)
+            ackConnectionId = ackPacket[0]
+            ackPacketNumber = ackPacket[1]
+            ackMessage = ackPacket[2]
+
+            # Determine if ACK is for us
+            if (addr[0] == args.server and ackConnectionId == connectionId and ackMessage == ACK_MESSAGE):
                 if args.verbose:
-                    print(ACK_MESSAGE)
+                    print("ackConnectionId", ackConnectionId, "ackPacketNumber", ackPacketNumber, "ackMessage", ackMessage)
                 break
-            # else:
+            # else:s
                 # add to timeout time
                 # if timeout time is  > MAX_TIMEOUT
                 # resend packet
-                
-
 
         # If packet is less than PACKET_SIZE then 
         # close file and break sending loop
@@ -117,7 +124,7 @@ try:
 #                     clientSocket.send(message.encode())
 #                     print('')
 
-#                 # Handle message recieved
+#                 # Handle message rescieved
 #                 elif i == clientSocket:
 #                     if args.verbose:
 #                         print('\tverbose: Just recieved a message from socket')
