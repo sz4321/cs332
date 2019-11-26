@@ -5,9 +5,17 @@ import socket
 import select
 import argparse
 import sys
-import json
+import json # Used to send array as message
 
-parser = argparse.ArgumentParser(description="A prattle server")
+#################################### Constants ####################################
+PAYLOAD_SIZE = 1450
+HEADER_SIZE = 12
+JSON_CONST =  81
+ACK_MESSAGE = "_ACK_"
+PACKET_SIZE = PAYLOAD_SIZE + HEADER_SIZE + JSON_CONST
+
+#################################### Arguments ####################################
+parser = argparse.ArgumentParser(description="Server to recieve files")
 
 parser.add_argument("-p", "--port", dest="port", type=int, default=12345,
                     help="UDP port the server is listening on (default 12345)")
@@ -24,14 +32,8 @@ parser.add_argument("-host", "--hostname", dest="hostname", default="127.0.0.1",
 
 args = parser.parse_args()
 
-####################################  Main Logic ####################################
-# Store variables
-PAYLOAD_SIZE = 1450
-HEADER_SIZE = 12
-JSON_CONST = 81
-ACK_MESSAGE = "_ACK_"
-PACKET_SIZE = PAYLOAD_SIZE + HEADER_SIZE + JSON_CONST
-
+#################################### Main Logic ####################################
+# Define variables
 port = args.port
 serverSocket = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
 host = args.hostname
@@ -55,16 +57,18 @@ with open(args.fileDest, 'wb') as f:
 
         if args.verbose:
             print('Recieving data from', addr)
-
-        # Extract packet payload
-        packet = json.loads(data)
-        payload = packet[3]
-        payloadSize = len(payload)
         
         # Extract header fields
+        packet = json.loads(data)
         connectionId = packet[0]
         fileSize = packet[1]
         currentPacketId = packet[2]
+        ACK_flag = packet[3]
+        print("packet", currentPacketId, "ACK_flag", ACK_flag)
+
+        # Extract packet payload
+        payload = packet[4]
+        payloadSize = len(payload)
         
         # Set currentPacketId if this is the first packet and we do not have current connection
         if (currentPacketId == 0 and currentConnectionId == None):
@@ -76,16 +80,18 @@ with open(args.fileDest, 'wb') as f:
                 # Update last recieved 
                 lastRecievedPacketId += 1
 
-                # Build ACK message
-                ackPacket = [connectionId, currentPacketId, ACK_MESSAGE]
+                if (ACK_flag):
+                    # Build ACK message
+                    ackPacket = [connectionId, currentPacketId, ACK_MESSAGE]
 
-                # Send ACK
-                serverSocket.sendto(json.dumps(ackPacket), addr)
+                    # Send ACK
+                    serverSocket.sendto(json.dumps(ackPacket), addr)
 
                 if args.verbose:
                     # TODO: delete this print stmt
                     print("connectionId: ", packet[0], 
                           "fileSize: ", fileSize, 
+                          "totalRecievedBytes", totalRecievedBytes,
                           "currentPacketID: ", packet[2], 
                           "Data: ", packet[3], 
                           "Size: ", payloadSize)
