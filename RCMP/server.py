@@ -5,14 +5,16 @@ import socket
 import select
 import argparse
 import sys
-import json # Used to send array as message
+from struct import *
 
 #################################### Constants ####################################
 PAYLOAD_SIZE = 1450
-HEADER_SIZE = 12
-JSON_CONST =  81
+HEADER_SIZE = 13 # 4 bytes connectionID + 4 bytes fileSize + 4 bytes currentPacketID + 1 byte ACK_flag
 ACK_MESSAGE = "_ACK_"
-PACKET_SIZE = PAYLOAD_SIZE + HEADER_SIZE + JSON_CONST
+PACKET_SIZE = PAYLOAD_SIZE + HEADER_SIZE
+
+PACKET_FORMAT = "IIIB1450s" # I = 4 byte int, B = 1 byte int, 1450s = data size
+ACK_FORMAT = "II5s"         # I = 4 byte int, 5s = s byte string
 
 #################################### Arguments ####################################
 parser = argparse.ArgumentParser(description="Server to recieve files")
@@ -45,7 +47,6 @@ print('Server listening....')
 if not args.verbose:
     print('Use -v to turn on verbose')
 
-
 # Open file to write to
 totalRecievedBytes = 0
 currentConnectionId = None
@@ -59,7 +60,7 @@ with open(args.fileDest, 'wb') as f:
             print('Recieving data from', addr)
         
         # Extract header fields
-        packet = json.loads(data)
+        packet = unpack(PACKET_FORMAT, data)
         connectionId = packet[0]
         fileSize = packet[1]
         currentPacketId = packet[2]
@@ -69,23 +70,22 @@ with open(args.fileDest, 'wb') as f:
         # Extract packet payload
         payload = packet[4]
         payloadSize = len(payload)
-        
+
         # Set currentPacketId if this is the first packet and we do not have current connection
         if (currentPacketId == 0 and currentConnectionId == None):
             currentConnectionId = connectionId
-        
+            print("set connection at first packet")
+
         # if packet belongs to current connection
         if (currentConnectionId == connectionId):
             if (lastRecievedPacketId + 1 == currentPacketId):
+
                 # Update last recieved 
                 lastRecievedPacketId += 1
 
                 if (ACK_flag):
-                    # Build ACK message
-                    ackPacket = [connectionId, currentPacketId, ACK_MESSAGE]
-
                     # Send ACK
-                    serverSocket.sendto(json.dumps(ackPacket), addr)
+                    serverSocket.sendto(pack(ACK_FORMAT, connectionId, currentPacketId, ACK_MESSAGE), addr)
 
                 if args.verbose:
                     # TODO: delete this print stmt
@@ -102,14 +102,12 @@ with open(args.fileDest, 'wb') as f:
                 # End connection when packet is smasller 
                 # than total file size
                 totalRecievedBytes += payloadSize
-                if totalRecievedBytes == fileSize:
+                print(totalRecievedBytes, fileSize)
+                if totalRecievedBytes >= fileSize:
                     break
             else:
-                # Build ACK message with last packet ID
-                ackPacket = [connectionId, lastRecievedPacketId, ACK_MESSAGE ]
-
                 # Send ACK
-                serverSocket.sendto(json.dumps(ackPacket), addr)
+                serverSocket.sendto(pack(ACK_FORMAT, connectionId, currentPacketId, ACK_MESSAGE), addr)
 
                 if args.verbose:
                     print("Skipped packet(s), dropping current (ID = " , currentPacketId ,")...")

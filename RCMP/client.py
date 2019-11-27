@@ -8,15 +8,16 @@ import sys
 import argparse
 import os, errno
 import random
-import json # Used to send array as message
+from struct import *
 
 #################################### Constants ####################################
 PAYLOAD_SIZE = 1450
-ACK_HEADER_SIZE = 8
-ACK_JSON_CONST = 19
+ACK_HEADER_SIZE = 8 # 4 bytes connectionID + 4 bytes packetID
 ACK_MESSAGE = "_ACK_"
-ACK_MESSAGE_SIZE = 5
-ACK_SIZE = ACK_MESSAGE_SIZE + ACK_JSON_CONST + ACK_HEADER_SIZE
+ACK_SIZE = ACK_HEADER_SIZE + 5 # 5 is ACK message size
+
+PACKET_FORMAT = "IIIB1450s" # I = 4 byte int, B = 1 byte int, 1450s = data size
+ACK_FORMAT = "II5s"         # I = 4 byte int, 5s = s byte string
 
 #################################### Arguments ####################################
 # set up commands for user
@@ -81,6 +82,8 @@ try:
             packetsSinceLastAck = 0
             ackSpace = 0
 
+        # hopefully temparary fix to
+        # be able to make progress
         elif ackSpace > 70:
             ACK_flag = 1
             packetsSinceLastAck = 0
@@ -100,15 +103,11 @@ try:
 
 
         ################## Create Packet ##################
-        # Create header, add to packet
-        packet = [connectionId, fileSize, currentPacketID, ACK_flag]
+        # Send packet to server
+        clientSocket.send(pack(PACKET_FORMAT, connectionId, fileSize, currentPacketID, ACK_flag, data))
 
         # Increment currentPacketID
         currentPacketID += 1
-
-        # Send packet to server
-        packet.append(data)
-        clientSocket.send(json.dumps(packet))
 
         if args.verbose:
             # TODO: delete this print stmt
@@ -121,7 +120,10 @@ try:
                 # Extract ACK fields
                 data, addr = clientSocket.recvfrom(ACK_SIZE)
                 print("data", data)
-                ackPacket = json.loads(data)
+
+
+                # ackPacket = json.loads(data)
+                ackPacket = unpack(ACK_FORMAT, data)
                 ackConnectionId = ackPacket[0]
                 ackPacketNumber = ackPacket[1]
                 ackMessage = ackPacket[2]
