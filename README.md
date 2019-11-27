@@ -18,6 +18,11 @@ ACKs have headers with:
 
 (2) Start client: `python client.py -p <port> -f <fileToSend> -s <serverIP> -v`
 
+## Confirm files are identical
+Run `md5sum fileToXfer.txt` or `md5 fileToXfer.txt` on both the original file you read, and the resulting file.
+
+The checksums generated should be identical if the files are identical. 
+
 # clientChat
 Build client to chat through terminal with another client using server.
 
