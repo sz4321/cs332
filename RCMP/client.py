@@ -1,5 +1,5 @@
 # Client to send file to another client user server
-# Edited by: Nikita Sietsema and Sebrina Zeleke
+# Authors: Nikita Sietsema and Sebrina Zeleke
 # Date: 11.19.19
 
 import select
@@ -9,6 +9,7 @@ import argparse
 import os, errno
 import random
 from struct import *
+from threading import Timer
 
 #################################### Constants ####################################
 PAYLOAD_SIZE = 1450
@@ -64,10 +65,15 @@ try:
     # create connection ID
     connectionId = random.randint(0, 2147483646)
 
+    ################## Define Variables ##################
     currentPacketID = 0
     ackSpace = 0
-    packetsSinceLastAck = 0
+    numPacketsSinceLastAck = 0
     ACK_flag = 1
+    packetOfLastConfirmedACK = 0
+    nextPacketToConfirmACK = 0
+
+    ################## Begin Creating Packets ##################
     while (data):
 
         # Determine if this is last packet
@@ -77,29 +83,25 @@ try:
         ################## Calculate ACK_flag ##################
         # Always send ack for last packet
         if lastPacket:
-            print("Got last packet")
+            if args.verbose:
+                print("Got last packet")
             ACK_flag = 1
-            packetsSinceLastAck = 0
-            ackSpace = 0
-
-        # hopefully temparary fix to
-        # be able to make progress
-        elif ackSpace > 70:
-            ACK_flag = 1
-            packetsSinceLastAck = 0
+            nextPacketToConfirmACK = currentPacketID
+            numPacketsSinceLastAck = 0
             ackSpace = 0
             
         # Increment space between acks
-        elif (ackSpace == packetsSinceLastAck):
+        elif (ackSpace == numPacketsSinceLastAck):
             ACK_flag = 1
+            nextPacketToConfirmACK = currentPacketID
             ackSpace += 1
-            packetsSinceLastAck = 0
+            numPacketsSinceLastAck = 0
 
         # Count packets since last ack
         # until we reach ack space
         else:
             ACK_flag = 0
-            packetsSinceLastAck += 1
+            numPacketsSinceLastAck += 1
 
 
         ################## Create Packet ##################
@@ -109,43 +111,60 @@ try:
         # Increment currentPacketID
         currentPacketID += 1
 
-        if args.verbose:
-            # TODO: delete this print stmt
-            print("connectionId: ", connectionId, "fileSize: ", fileSize, "currentPacketID: ", currentPacketID, 'Data: ', repr(data), "Size: ", dataSize)
+        # TODO: delete this print stmt
+        print("connectionId: ", connectionId, "fileSize: ", fileSize, "currentPacketID: ", currentPacketID, 'Data: ', repr(data), "Size: ", dataSize)
         
         ################## Wait for ACK ##################
         if (ACK_flag):
             while True:
-                print("waiting for ACK - current ackSpace: ", ackSpace)
-                # Extract ACK fields
-                data, addr = clientSocket.recvfrom(ACK_SIZE)
-                print("data", data)
+                if args.verbose:
+                    print("waiting for ACK - current ackSpace: ", ackSpace)
 
-
-                # ackPacket = json.loads(data)
-                ackPacket = unpack(ACK_FORMAT, data)
-                ackConnectionId = ackPacket[0]
-                ackPacketNumber = ackPacket[1]
-                ackMessage = ackPacket[2]
-                print("ack is for us?", "addr[0]", addr[0], 
-                    "args server", args.server, 
-                    "ackConnectionId", ackConnectionId, 
-                    "connectionId", connectionId, 
-                    "ackMessage", ackMessage, 
-                    "ACK_MESSAGE", ACK_MESSAGE)
-
-                # Determine if ACK is for us
-                if (addr[0] == args.server and ackConnectionId == connectionId and ackMessage == ACK_MESSAGE):
-                    print("recieved ACK for packet", ackPacketNumber)
+                # Catch timeout except to stop waiting for ack
+                # and start resending packets
+                try:
+                    # Set timeout limit for waiting for ACK
                     if args.verbose:
-                        print("ackConnectionId", ackConnectionId, "ackPacketNumber", ackPacketNumber, "ackMessage", ackMessage)
-                    break
-                # else:s
-                    # add to timeout time
-                    # if timeout time is  > MAX_TIMEOUT
-                    # resend packet
+                        print("Starting timer for ACK")
+                    clientSocket.settimeout(1)
 
-        # If packet is less than PACKET_SIZE then 
+                    # Retrieve ACK packet (if we get here)
+                    data, addr = clientSocket.recvfrom(ACK_SIZE)
+
+                    # Extract ACK fields and message
+                    ackPacket = unpack(ACK_FORMAT, data)
+                    ackConnectionId = ackPacket[0]
+                    ackPacketNumber = ackPacket[1]
+                    packetOfLastConfirmedACK = ackPacketNumber
+                    ackMessage = ackPacket[2]
+
+                    # Determine if ACK is for us, and for correct packet
+                    if (addr[0] == args.server and ackConnectionId == connectionId and ackMessage == ACK_MESSAGE and nextPacketToConfirmACK == ackPacketNumber):
+                        if args.verbose:
+                            print("recieved ACK for packet", ackPacketNumber)
+                        break # Recieved ACK, so stop waiting
+
+                # Did not recieve ACK in timeout
+                except socket.timeout:
+                    if args.verbose:
+                        print("Timer has run out, sending packets again!")
+
+                    # Reset file pointer to last successfully sent byte
+                    fileSrc.seek((1450*packetOfLastConfirmedACK), os.SEEK_SET)
+
+                    # Reset packet ID to packet of last successful ACK
+                    currentPacketID = packetOfLastConfirmedACK
+
+                    # Reset ACK counters to beginning values
+                    ACK_flag = 1
+                    numPacketsSinceLastAck = 0
+                    ackSpace = 0
+
+                    # Did not recieve ACK in allotted time
+                    # Break out of loop that waits for ACK
+                    # Begin resending
+                    break
+
         # close file and break sending loop
         if lastPacket:                
             fileSrc.close()
@@ -156,49 +175,7 @@ try:
 
     print('Done sending')
     clientSocket.close()
-    
 
-#     # Set up infinite loop to listen for messages and talk
-#     while True: 
-#         try:
-#             # Make input source be clientSocket
-#             inputs, outputs, errors = select.select([clientSocket, sys.stdin], [sys.stdout], [])
-
-#             for i in inputs:
-#                 # Handle keyboard input
-#                 if i == sys.stdin:
-#                     if args.verbose:
-#                         print('\tverbose: Just recieved input from keyboard and sent a message')
-#                     message = args.name + "> " + sys.stdin.readline()
-#                     clientSocket.send(message.encode())
-#                     print('')
-
-#                 # Handle message rescieved
-#                 elif i == clientSocket:
-#                     if args.verbose:
-#                         print('\tverbose: Just recieved a message from socket')
-#                     text = clientSocket.recv(100)
-#                     if text == "":
-#                         raise RuntimeError
-#                     print(text)
-
-#         # Handle errors gracefully
-#         except KeyboardInterrupt:
-#             print("Thanks for chatting, goodbye")
-#             clientSocket.close()
-#             break
-#         except RuntimeError:
-#             print("Houston we have a problem: \n\tLost connection to server, goodbye")
-#             clientSocket.close()
-#             break
-#         except errno:
-#             print(os.strerror(errno.errocode))
-#             clientSocket.close()
-#             break
-#         except:
-#             print("Unknown error")
-#             clientSocket.close()
-#             break
 except:
     print("Could not connect to server.")
     clientSocket.close()

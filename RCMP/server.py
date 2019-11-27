@@ -1,5 +1,5 @@
 # Server to recieve files and write to given destination file
-# Editors: Sebrina and Nikita
+# Authors: Sebrina Zeleke and Nikita Sietsema
 
 import socket
 import select
@@ -65,19 +65,19 @@ with open(args.fileDest, 'wb') as f:
         fileSize = packet[1]
         currentPacketId = packet[2]
         ACK_flag = packet[3]
-        print("packet", currentPacketId, "ACK_flag", ACK_flag)
 
         # Extract packet payload
         payload = packet[4]
         payloadSize = len(payload)
 
-        # Set currentPacketId if this is the first packet and we do not have current connection
+        # Set currentConnectionId if this is the first packet and we do not have current connection
         if (currentPacketId == 0 and currentConnectionId == None):
             currentConnectionId = connectionId
-            print("set connection at first packet")
 
         # if packet belongs to current connection
         if (currentConnectionId == connectionId):
+
+            # If recieved packet is the next consecutive packet
             if (lastRecievedPacketId + 1 == currentPacketId):
 
                 # Update last recieved 
@@ -86,15 +86,6 @@ with open(args.fileDest, 'wb') as f:
                 if (ACK_flag):
                     # Send ACK
                     serverSocket.sendto(pack(ACK_FORMAT, connectionId, currentPacketId, ACK_MESSAGE), addr)
-
-                if args.verbose:
-                    # TODO: delete this print stmt
-                    print("connectionId: ", packet[0], 
-                          "fileSize: ", fileSize, 
-                          "totalRecievedBytes", totalRecievedBytes,
-                          "currentPacketID: ", packet[2], 
-                          "Data: ", packet[3], 
-                          "Size: ", payloadSize)
 
                 # write data to a file
                 f.write(payload)
@@ -105,9 +96,11 @@ with open(args.fileDest, 'wb') as f:
                 print(totalRecievedBytes, fileSize)
                 if totalRecievedBytes >= fileSize:
                     break
+
+            # Lost or duplicate packet
             else:
-                # Send ACK
-                serverSocket.sendto(pack(ACK_FORMAT, connectionId, currentPacketId, ACK_MESSAGE), addr)
+                # Send ACK for last successfully recieved packet
+                serverSocket.sendto(pack(ACK_FORMAT, connectionId, lastRecievedPacketId, ACK_MESSAGE), addr)
 
                 if args.verbose:
                     print("Skipped packet(s), dropping current (ID = " , currentPacketId ,")...")
