@@ -6,6 +6,7 @@ import select
 import argparse
 import sys
 from struct import *
+import StringIO
 
 #################################### Constants ####################################
 PAYLOAD_SIZE = 1450
@@ -87,15 +88,21 @@ with open(args.fileDest, 'wb') as f:
                     # Send ACK
                     serverSocket.sendto(pack(ACK_FORMAT, connectionId, currentPacketId, ACK_MESSAGE), addr)
 
-                # write data to a file
-                f.write(payload)
-
                 # End connection when packet is smasller 
                 # than total file size
                 totalRecievedBytes += payloadSize
-                print(totalRecievedBytes, fileSize)
                 if totalRecievedBytes >= fileSize:
+                    # Remove extra bytes from payload
+                    actualDataSize = PAYLOAD_SIZE - (totalRecievedBytes - fileSize)
+                    payloadAsIO = StringIO.StringIO(payload)
+
+                    # Write actual data to file
+                    f.write(payloadAsIO.read(actualDataSize))
                     break
+
+                # write all data to a file
+                else:
+                    f.write(payload)
 
             # Lost or duplicate packet
             else:
