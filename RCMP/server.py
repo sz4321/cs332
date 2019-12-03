@@ -66,6 +66,7 @@ with open(args.fileDest, 'wb') as f:
         fileSize = packet[1]
         currentPacketId = packet[2]
         ACK_flag = packet[3]
+        print("currentPacketId", currentPacketId)
 
         # Extract packet payload
         payload = packet[4]
@@ -83,12 +84,19 @@ with open(args.fileDest, 'wb') as f:
 
                 # Update last recieved 
                 lastRecievedPacketId += 1
-
                 if (ACK_flag):
                     # Send ACK
-                    serverSocket.sendto(pack(ACK_FORMAT, connectionId, currentPacketId, ACK_MESSAGE), addr)
+                    ###################################################################################################
+                    ###################################################################################################
+                    ###################################################################################################
+                    ###################################################################################################
+                    ###################################################################################################
+                    ###################################################################################################
+                    if not ((totalRecievedBytes + payloadSize) >= fileSize): # TODO: REMOVE THIS IF!!!!!! ONLY TO CHECK LOST FINAL ACK LOGIC!!!
+                        print("Got inside not last")
+                        serverSocket.sendto(pack(ACK_FORMAT, connectionId, currentPacketId, ACK_MESSAGE), addr)
 
-                # End connection when packet is smasller 
+                # End connection when packet is smaller 
                 # than total file size
                 totalRecievedBytes += payloadSize
                 if totalRecievedBytes >= fileSize:
@@ -113,6 +121,6 @@ with open(args.fileDest, 'wb') as f:
                     print("Skipped packet(s), dropping current (ID = " , currentPacketId ,")...")
                     print("Send ACK for" , lastRecievedPacketId)
 
-f.close()
-serverSocket.close()
+# f.close()
+# serverSocket.close()
 print('Connection closed, wrote file')
