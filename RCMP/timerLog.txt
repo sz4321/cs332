@@ -1,5 +1,0 @@
-Original transmit time:
-22.7 sec
-
-Transmit time with ACK:
-37.59 sec
