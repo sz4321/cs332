@@ -28,7 +28,7 @@ parser.add_argument("-s", "--server", dest="server", default="127.0.0.1",
                     help="server hostname or IP address (default: 127.0.0.1)")
 parser.add_argument("-p", "--port", dest="port", type=int, default=12345,
                     help="UDP port the server is listening on (default 12345)")
-parser.add_argument("-f", "--filename", dest="filename", default='text.txt',
+parser.add_argument("-f", "--filename", dest="filename", default='100mbFile.txt',
                     help="write filename include extension to send to other client")
 
 # Optional verbose for more info
@@ -80,7 +80,7 @@ try:
 
     ################## Begin Creating Packets ##################
     while (notDone):
-        # Determine if this is last packet
+        # Determine if this is last (final) packet
         dataSize = len(data)
         lastPacket = dataSize < PAYLOAD_SIZE
 
@@ -107,7 +107,6 @@ try:
             ACK_flag = 0
             numPacketsSinceLastAck += 1
 
-
         ################## Create Packet ##################
         # Send packet to server
         clientSocket.send(pack(PACKET_FORMAT, connectionId, fileSize, currentPacketID, ACK_flag, data))
@@ -118,10 +117,7 @@ try:
         ################## Wait for ACK ##################
         if (ACK_flag):
             while True:
-                if args.verbose:
-                    print("waiting for ACK - current ackSpace: ", ackSpace)
-
-                # Catch timeout except to stop waiting for ack
+                # Catch timeout exception to stop waiting for ack
                 # and start resending packets
                 try:
                     # Retrieve ACK packet (if we get here)
@@ -133,15 +129,15 @@ try:
                     ackPacketNumber = ackPacket[1]
                     packetOfLastConfirmedACK = ackPacketNumber
                     ackMessage = ackPacket[2]
-
+                    
                     # Determine if ACK is for us, and for correct packet
                     if (addr[0] == args.server and ackConnectionId == connectionId and ackMessage == ACK_MESSAGE and nextPacketToConfirmACK == ackPacketNumber):
-                        if args.verbose:
+                        if args.verbose: 
                             print("recieved ACK for packet", ackPacketNumber)
 
                         if lastPacket:
                             finalPrintMessage = "File successfuly sent!"
-                            notDone = False
+                            notDone = False # We are done
 
                         break # Recieved ACK, so stop waiting
 
@@ -149,19 +145,21 @@ try:
                 except socket.timeout:
                     if args.verbose:
                         print("Timer has run out, sending packets again!")
-                    print("currentPacket", currentPacketID, "lastPacket?", lastPacket)
-                    if lastPacket: pass
-                        # notDone = False
-                    #     # Check num of timeouts
-                    #     # If == 5, give up on recieving ACK
-                    #     if numConsecutiveTimeouts == 5:
-                    #         finalPrintMessage = "File transfer success unknown."
-                    #         notDone = False
-                    #         break # Give up on final ACK and stop waiting
 
-                    #     # Count num timeouts for last packet
-                    #     # To avoid waiting for lost final ACK
-                    #     numConsecutiveTimeouts += 1
+                    if lastPacket:
+                        # Check num of timeouts
+                        # If timeouts == 5, give up on recieving ACK
+                        if numConsecutiveTimeouts == 5:
+                            finalPrintMessage = "File transfer success unknown."
+                            notDone = False
+                            break # Give up on final ACK and stop waiting
+
+                        # Count num timeouts for last packet
+                        # To avoid waiting for lost final ACK
+                        numConsecutiveTimeouts += 1
+ 
+                    if (args.verbose and numConsecutiveTimeouts >= 1):
+                        print("We got more than 0 consecutive timeouts = ", numConsecutiveTimeouts)
 
                     # Reset file pointer to last successfully sent byte
                     fileSrc.seek((1450*packetOfLastConfirmedACK), os.SEEK_SET)
@@ -180,18 +178,13 @@ try:
                     break
 
         # close file and break sending loop
-        # lastPacket and done
-        print("before check for last packet and done")
         if lastPacket and not notDone:  
-            print("inside last packet and done")  
             fileSrc.close()
             break
 
-        print("Getting next packet")
         # Get next packet
         data = fileSrc.read(PAYLOAD_SIZE)
 
-    print("ENDDDDDDDDD||||||||||")  
     print(finalPrintMessage)
     clientSocket.close()
 

@@ -52,13 +52,11 @@ if not args.verbose:
 totalRecievedBytes = 0
 currentConnectionId = None
 lastRecievedPacketId  = -1
+
 with open(args.fileDest, 'wb') as f:
     while True:
         # Recieve data
         data, addr = serverSocket.recvfrom(PACKET_SIZE)
-
-        if args.verbose:
-            print('Recieving data from', addr)
         
         # Extract header fields
         packet = unpack(PACKET_FORMAT, data)
@@ -66,7 +64,9 @@ with open(args.fileDest, 'wb') as f:
         fileSize = packet[1]
         currentPacketId = packet[2]
         ACK_flag = packet[3]
-        print("currentPacketId", currentPacketId)
+
+        if args.verbose:
+            print('Recieving data from ', addr, "packet number: ", currentPacketId)
 
         # Extract packet payload
         payload = packet[4]
@@ -84,17 +84,13 @@ with open(args.fileDest, 'wb') as f:
 
                 # Update last recieved 
                 lastRecievedPacketId += 1
+
                 if (ACK_flag):
                     # Send ACK
-                    ###################################################################################################
-                    ###################################################################################################
-                    ###################################################################################################
-                    ###################################################################################################
-                    ###################################################################################################
-                    ###################################################################################################
-                    if not ((totalRecievedBytes + payloadSize) >= fileSize): # TODO: REMOVE THIS IF!!!!!! ONLY TO CHECK LOST FINAL ACK LOGIC!!!
-                        print("Got inside not last")
-                        serverSocket.sendto(pack(ACK_FORMAT, connectionId, currentPacketId, ACK_MESSAGE), addr)
+                    serverSocket.sendto(pack(ACK_FORMAT, connectionId, currentPacketId, ACK_MESSAGE), addr)
+
+                    if (args.verbose):
+                        print("Sending ACK...")
 
                 # End connection when packet is smaller 
                 # than total file size
@@ -121,6 +117,6 @@ with open(args.fileDest, 'wb') as f:
                     print("Skipped packet(s), dropping current (ID = " , currentPacketId ,")...")
                     print("Send ACK for" , lastRecievedPacketId)
 
-# f.close()
-# serverSocket.close()
+f.close()
+serverSocket.close()
 print('Connection closed, wrote file')
